@@ -5,8 +5,6 @@
 #########################################################################################
 #What day of the week do you want to take the weekly snapshot? Default = Friday(5)	#
 WEEKLY_DOW=5 										#
-#What hour of the day to you want to take the daily snapshot? Default = 11PM (23)	#
-DAILY_TIME=23										#
 #Do you want to use UTC time? (1 = Yes) Default = 0, use local time.			#
 USE_UTC=0										#
 #Path to GNU date binary (e.g. /bin/date on Linux, /usr/local/bin/gdate on FreeBSD)	#
@@ -22,7 +20,6 @@ This script manages Tarsnap backups
 ARGUMENTS:
 	 ?   Display this help.    
 	-f   Path to a file with a list of folders to be backed up. List should be \n delimited.  
-	-h   Number of hourly backups to retain.
 	-d   Number of daily backups to retain.
 	-w   Number of weekly backups to retain.
 	-m   Number of monthly backups to retain.
@@ -33,7 +30,6 @@ EOF
 }
 
 #Declaring helps check for errors in the user-provided arguments. See line #69.
-declare -i HOURLY_CNT
 declare -i DAILY_CNT
 declare -i WEEKLY_CNT
 declare -i MONTHLY_CNT
@@ -42,10 +38,9 @@ declare -i QUIET
 QUIET=0
 
 #Get the command line arguments. Much nicer this way than $1, $2, etc. 
-while getopts ":f:h:d:w:m:q" opt ; do
+while getopts ":f:d:w:m:q" opt ; do
 	case $opt in
 		f ) PATHS=$OPTARG ;;
-		h ) HOURLY_CNT=$(($OPTARG+1)) ;;
 		d ) DAILY_CNT=$(($OPTARG+1)) ;;
 		w ) WEEKLY_CNT=$(($OPTARG+1)) ;;
 		m ) MONTHLY_CNT=$(($OPTARG+1)) ;;
@@ -58,9 +53,9 @@ while getopts ":f:h:d:w:m:q" opt ; do
 done
 
 #Check arguments
-if ( [ -z "$PATHS" ] || [ -z "$HOURLY_CNT" ] || [ -z "$DAILY_CNT" ] || [ -z "$WEEKLY_CNT" ] || [ -z "$MONTHLY_CNT" ] ) 
+if ( [ -z "$PATHS" ] || [ -z "$DAILY_CNT" ] || [ -z "$WEEKLY_CNT" ] || [ -z "$MONTHLY_CNT" ] ) 
 then
-	echo "-f, -h, -d, -w, -m are not optional."
+	echo "-f, -d, -w, -m are not optional."
 	usage
 	exit 1
 fi
@@ -72,10 +67,10 @@ then
         exit 1
 fi
 
-#Check that $HOURLY_CNT, $DAILY_CNT, $WEEKLY_CNT, $MONTLY_CNT are numbers.
-if ( [ $HOURLY_CNT = 1 ] || [ $DAILY_CNT = 1 ] || [ $WEEKLY_CNT = 1 ] || [ $MONTHLY_CNT = 1 ] )
+#Check that $DAILY_CNT, $WEEKLY_CNT, $MONTLY_CNT are numbers.
+if ( [ $DAILY_CNT = 1 ] || [ $WEEKLY_CNT = 1 ] || [ $MONTHLY_CNT = 1 ] )
 then
-	echo "-h, -d, -w, -m must all be numbers greater than 0."
+	echo "-d, -w, -m must all be numbers greater than 0."
 	usage
 	exit 1
 fi
@@ -95,18 +90,14 @@ if [ "$USE_UTC" = "1" ] ; then
 	CUR_HOUR=$($DATE_BIN -u +%H)
 fi
 
-#Find the backup type (HOURLY|DAILY|WEEKLY|MONTHY)
-BK_TYPE=HOURLY	#Default to HOURLY
-if ( [ "$DOM" = "$LDOM" ] && [ "$CUR_HOUR" = "$DAILY_TIME" ] ) ; then
+#Find the backup type (DAILY|WEEKLY|MONTHY)
+BK_TYPE=DAILY	#Default to DAILY
+if ( [ "$DOM" = "$LDOM" ] ) ; then
 	BK_TYPE=MONTHLY
 else
-        if ( [ "$DOW" = "$WEEKLY_DOW" ] && [ "$CUR_HOUR" = "$DAILY_TIME" ] ) ; then
+        if ( [ "$DOW" = "$WEEKLY_DOW" ] ) ; then
         	BK_TYPE=WEEKLY
-	else
-                if [ "$CUR_HOUR" = "$DAILY_TIME" ] ; then
-			BK_TYPE=DAILY
-                fi
-        fi
+	fi
 fi
 
 #Take the backup with the right name 
@@ -143,33 +134,12 @@ for dir in $(cat $PATHS) ; do
 done
 
 #Delete old backups
-HOURLY_DELETE_TIME=$($DATE_BIN -d"-$HOURLY_CNT hour" +%Y%m%d-%H) 
 DAILY_DELETE_TIME=$($DATE_BIN -d"-$DAILY_CNT day" +%Y%m%d-%H)
 WEEKLY_DELETE_TIME=$($DATE_BIN -d"-$WEEKLY_CNT week" +%Y%m%d-%H)
 MONTHLY_DELETE_TIME=$($DATE_BIN -d"-$MONTHLY_CNT month" +%Y%m%d-%H)
 
 if [ $QUIET != "1" ] ; then
     echo "Finding backups to be deleted."
-fi
-
-if [ $BK_TYPE = "HOURLY" ] ; then
-	for backup in $archive_list ; do
-		case "$backup" in
-			 "$HOURLY_DELETE_TIME-$BK_TYPE"* ) 	
-					case "$backup" in   #this case added to make sure the script doesn't delete the backup it just took. Case: '-h x' and backup takes > x hours. 
-						*"$NOW"* ) echo "Skipped $backup" ;;
-						* )  tarsnap -d -f $backup
-							if [ $? = 0 ] ; then
-							    if [ $QUIET != "1" ] ; then
-              							echo "$backup snapshot deleted."
-							    fi
-     					   		else
-           							echo "Unable to delete $backup. Exiting" ; exit $?
-        						fi ;;
-					esac ;;
-			* ) ;;
-		esac
- 	done
 fi
 
 
