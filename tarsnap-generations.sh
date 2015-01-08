@@ -4,13 +4,13 @@
 
 #########################################################################################
 #What day of the week do you want to take the weekly snapshot? Default = Friday(5)	#
-WEEKLY_DOW=5 										#
+WEEKLY_DOW=6 										#
 #Do you want to use UTC time? (1 = Yes) Default = 0, use local time.			#
 USE_UTC=0										#
 #Path to GNU date binary (e.g. /bin/date on Linux, /usr/local/bin/gdate on FreeBSD)	#
 DATE_BIN=`which date`									#
 #The DOM to take monthly backups.                                                       #
-LDOM=1                                                                                  #
+LDOM=01                                                                                 #
 #########################################################################################
 usage ()
 {
