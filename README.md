@@ -4,15 +4,16 @@ tarsnap-generations
 ####SYNOPSIS
 Cycles [Tarsnap](https://tarsnap.com/ "Tarsnap") backups in a grandfather-father-son scheme.
 
+Forked to remove hourly backups. Can run with regularity through anacrontab.
+
 ####USAGE
-The script is designed to be run via crontab or equivalent.
+The script is designed to be run via [ana]crontab or equivalent.
 ```gherkin
     tarsnap-generations.sh
 
         ARGUMENTS:
              ?   Display this help.    
             -f   Path to a file with a list of folders to be backed up. List should be newline delimited.  
-            -h   Number of hourly backups to retain.
             -d   Number of daily backups to retain.
             -w   Number of weekly backups to retain.
             -m   Number of monthly backups to retain.
@@ -20,8 +21,7 @@ The script is designed to be run via crontab or equivalent.
 ```
 
 ####DESCRIPTION
-The script is designed to be run via crontab. It expects five inputs and a working Tarsnap configuration file (see below).
-If you don't want to take hourly backups then use cron to schedule a backup only in the hour specified in the script as the $DAILY_TIME variable, line 9. Set -h to "1". By default the script takes the "DAILY" backup in the 23:00 hour system time. 
+The script is designed to be run via [ana]crontab. It expects four inputs and a working Tarsnap configuration file (see below).
 
 ####REQUIRES
 The tarsnap-generations requires a .tarsnaprc or tarsnap.conf that specifies at least these options -  
@@ -33,15 +33,11 @@ The tarsnap-generations requires a .tarsnaprc or tarsnap.conf that specifies at 
 ```
 See [the Tarsnap documentation](http://www.tarsnap.com/man-tarsnap.conf.5.html "tarsnap.conf") for more details.
 
-####CRONTAB EXAMPLES 	
+####ANACRONTAB EXAMPLES 	
 ```gherkin
-    15 * * * * tarsnap-generations.sh -f /root/tarsnap.folders -h 36 -d 30 -w 12 -m 24
+    1       7       tarsnap.archive tarsnap-generations.sh -f /root/tarsnap.folders -d 30 -w 12 -m 24
 ```
-Takes a backup every hour at the :15, keeps 36 hours of hourly backups, 30 days of daily backups, 12 weeks of weekly backups and 2 years of monthly backups.
-```gherkin
-    30 23 * * * tarsnap-generations.sh -f /root/tarsnap.folders -h 1 -d 10 -w 4 -m 2
-```
-No hourly backups, a daily backup at 23:30, keeps 10 days of daily backups, 4 weeks of weekly backups and 2 months of monthly backups. Note that the hour here (23) must match the hour set by $DAILY_TIME, line 9 of the script. 23 (11PM) is the default.
+No hourly backups, a daily backup, keeps 30 days of daily backups, 12 weeks of weekly backups, and 2 months of monthly backups.
 
 ####ERRORS
 The script will exit with a non 0 error code if a backup fails or can't be verified. Be sure to pay attention. 
